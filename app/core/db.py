@@ -6,6 +6,7 @@ from app.models.user_model import *
 from app.models.product_model import *
 from app.models.models import *
 from app.models.category_model import *
+from app.models.default_model import *
 
 from app.services.user_service import create_user
 

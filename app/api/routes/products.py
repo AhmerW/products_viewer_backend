@@ -1,9 +1,10 @@
 from typing import Optional, List
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 
-from sqlmodel import select, or_, text, and_
-from sqlalchemy.orm import selectinload
+from sqlmodel import select, or_, text, and_, func, col
+from sqlalchemy.orm import selectinload, column_property
 
 
 from app.api.deps import CurrentUser, SessionDep
@@ -16,10 +17,10 @@ router = APIRouter(prefix="/products", tags=["products"])
 
 
 
-@router.get("/", response_model=ProductsPublic)
+@router.put("/", response_model=ProductsPublic)
 async def read_products(
     session: SessionDep,
-    #current_user: CurrentUser,
+    current_user: CurrentUser,
     skip: int = 0,
     limit: int = 30,
     filter: Optional[ProductFilters] = None,
@@ -29,9 +30,9 @@ async def read_products(
 
 ):
     # if not empty must either be viewer, editor, or admin..
-   # if not current_user.roles: 
-        #raise HTTPException(status_code=403, detail="Forbidden")
-        
+        if not current_user.roles: 
+            raise HTTPException(status_code=403, detail="Forbidden")
+
 
         base_query = """
         SELECT product.*, category.description as category_description, category.name as category_name FROM product
@@ -62,25 +63,62 @@ async def read_products(
                         f"category.name = :{param_data_key}"
                     )
 
-
                 elif single_filter.filter_mode in {ProductFilterMode.field, ProductFilterMode.header}:
                     json_field = 'fields' if single_filter.filter_mode == ProductFilterMode.field else 'headers'
-                    conditions.append(
-                        f"EXISTS (SELECT 1 FROM json_array_elements(product.{json_field}) elem WHERE elem->>'key' = :{param_data_key} AND elem->>'value' = :{param_value_key})"
-                    )
 
-                    params[param_value_key] = single_filter.filter_value
+                    if not single_filter.filter_value and not single_filter.filter_value_any and not single_filter.filter_value_empty:
+                        raise HTTPException(status_code=400, detail="Filter value required")
+                    
+                    if single_filter.filter_value:
+         
+                        # If there is a specific value to check
+                        conditions.append(
+                            f"EXISTS (SELECT 1 FROM json_array_elements(product.{json_field}) elem WHERE elem->>'key' = :{param_data_key} AND elem->>'value' = :{param_value_key})"
+                        )
+                        params[param_value_key] = single_filter.filter_value
+                    elif single_filter.filter_value_any:
+                        # If any value is allowed for the specified field
+                        conditions.append(
+                            f"EXISTS (SELECT 1 FROM json_array_elements(product.{json_field}) elem WHERE elem->>'key' = :{param_data_key})"
+                        )
+                    elif single_filter.filter_value_empty:
+                        # If the field value should be empty
+                        conditions.append(
+                            f"EXISTS (SELECT 1 FROM json_array_elements(product.{json_field}) elem WHERE elem->>'key' = :{param_data_key} AND (elem->>'value' = '' OR elem->>'value' IS NULL))"
+                        )
+
                 elif single_filter.filter_mode == ProductFilterMode.field_and_header:
-                    conditions.append(
-                        f"""(
-                        EXISTS (SELECT 1 FROM json_array_elements(product.fields) elem WHERE elem->>'key' = :{param_data_key} AND elem->>'value' = :{param_value_key})
-                        OR
-                        EXISTS (SELECT 1 FROM json_array_elements(product.headers) elem WHERE elem->>'key' = :{param_data_key} AND elem->>'value' = :{param_value_key})
-                        )"""
-                    )
+                    # Combine field and header logic
+                    if single_filter.filter_value:
+                        # Specific value for both field and header
+                        conditions.append(
+                            f"""(
+                                EXISTS (SELECT 1 FROM json_array_elements(product.fields) elem WHERE elem->>'key' = :{param_data_key} AND elem->>'value' = :{param_value_key})
+                                OR
+                                EXISTS (SELECT 1 FROM json_array_elements(product.headers) elem WHERE elem->>'key' = :{param_data_key} AND elem->>'value' = :{param_value_key})
+                            )"""
+                        )
+                        params[param_value_key] = single_filter.filter_value
+                    elif single_filter.filter_value_any:
+                        # Any value allowed for both field and header
+                        conditions.append(
+                            f"""(
+                                EXISTS (SELECT 1 FROM json_array_elements(product.fields) elem WHERE elem->>'key' = :{param_data_key})
+                                OR
+                                EXISTS (SELECT 1 FROM json_array_elements(product.headers) elem WHERE elem->>'key' = :{param_data_key})
+                            )"""
+                        )
+                    elif single_filter.filter_value_empty:
+                        # Empty values allowed for both field and header
+                        conditions.append(
+                            f"""(
+                                EXISTS (SELECT 1 FROM json_array_elements(product.fields) elem WHERE elem->>'key' = :{param_data_key} AND (elem->>'value' = '' OR elem->>'value' IS NULL))
+                                OR
+                                EXISTS (SELECT 1 FROM json_array_elements(product.headers) elem WHERE elem->>'key' = :{param_data_key} AND (elem->>'value' = '' OR elem->>'value' IS NULL))
+                            )"""
+                        )
 
-                    params[param_value_key] = single_filter.filter_value
-
+ 
         # Apply text query
         if query:
             conditions.append("product.title ILIKE :query")
@@ -100,8 +138,7 @@ async def read_products(
         params["limit"] = limit
         params["offset"] = skip
 
-        print("params", params)
-    
+
 
         # Execute query
         result = session.exec(text(base_query).bindparams(**params))
@@ -109,7 +146,7 @@ async def read_products(
 
         return ProductsPublic(products=products, count=len(products))
 
-
+"""
 @router.get("/{id}", response_model=ProductsPublic)
 async def read_product(session: SessionDep, current_user, CurrentUser, id: int):
     product = session.get(Product, id)
@@ -120,7 +157,7 @@ async def read_product(session: SessionDep, current_user, CurrentUser, id: int):
         raise HTTPException(status_code=403, detail="Forbidden")
 
     return product
-
+"""
 
 @router.post("/", response_model=ProductPublic)
 async def create_product(session: SessionDep, current_user: CurrentUser, product_in: ProductCreate):
@@ -175,3 +212,10 @@ async def delete_product(session: SessionDep, current_user: CurrentUser, id: int
     session.delete(product)
     session.commit()
     return product
+
+@router.get("/count", response_model=int)   
+async def count_products(session: SessionDep):
+
+    
+    count = count = session.exec(select(func.count(col(Product.id))).where(Product.id > 0)).one()
+    return JSONResponse({"count": str(count)}, status_code=200)

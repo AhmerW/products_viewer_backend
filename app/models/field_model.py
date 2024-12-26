@@ -7,6 +7,7 @@ class FieldBaseModel(BaseModel):
     index: int
     is_divider: bool = False
 
+
 class FieldModel(FieldBaseModel):
     is_divider: bool = False
 

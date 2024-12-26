@@ -44,10 +44,15 @@ def login_refresh_token(
     access_token = security.create_access_token(
         user.id, expires_delta=access_token_expires
         )
+    dump = user.model_dump()
     response = JSONResponse(
        {
         "access_token": access_token.decode("utf-8"),
         "refresh_token": refresh_token.decode("utf-8"),
+        "token_type": "bearer",
+        "user_id": user.id,
+        "username": user.username,
+        "roles": user.roles,
         },
     )
   
@@ -66,19 +71,32 @@ def login_access_token(
     """
     OAuth2 compatible token login, get an access token for future requests
     """
-    if not refresh_token:
-        return HTTPException(status_code=400, detail="Invalid token")
-    if not request.cookies:
-        return HTTPException(status_code=400, detail="No cookies")
-    if "refresh-token" not in request.cookies:
-        return HTTPException(status_code=400, detail="No refresh token")
-    refresh_token = request.cookies["refresh-token"]
+
+
     # verify refresh token
     user_id = security.verify_refresh_token(refresh_token)
     if not user_id:
         return HTTPException(status_code=400, detail="Invalid token")
     
+    user = session.exec(select(User).where(User.id == int(user_id))).first()
+    # if not user
+    if not user:
+        return HTTPException(status_code=400, detail="Invalid token")
+    
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    dump = user.model_dump()
+    return JSONResponse(
+        {
+            "access_token": security.create_access_token(
+                user_id, expires_delta=access_token_expires
+            ).decode("utf-8"),
+            "token_type": "bearer",
+                    "user_id": user.id,
+        "username": user.username,
+        "roles": user.roles,
+
+        }
+    )
     return Token(
         access_token=security.create_access_token(
             user_id, expires_delta=access_token_expires
@@ -115,7 +133,7 @@ def read_users_me(
     """
     return current_user
 
-@router.get("/users/", response_model=List[UserPublic])
+@router.get("/users", response_model=List[UserPublic])
 def read_users(
     session: SessionDep,
     current_user: CurrentUser,
