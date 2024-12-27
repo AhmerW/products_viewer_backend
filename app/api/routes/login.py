@@ -45,10 +45,15 @@ def login_refresh_token(
         user.id, expires_delta=access_token_expires
         )
     dump = user.model_dump()
+    if not isinstance(access_token, str):
+        access_token = access_token.decode("utf-8")
+    if not isinstance(refresh_token, str):
+        refresh_token = refresh_token.decode("utf-8")
+
     response = JSONResponse(
        {
-        "access_token": access_token.decode("utf-8"),
-        "refresh_token": refresh_token.decode("utf-8"),
+        "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
         "user_id": user.id,
         "username": user.username,
@@ -85,17 +90,20 @@ def login_access_token(
     
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     dump = user.model_dump()
+    access_token = security.create_access_token(
+                user_id, expires_delta=access_token_expires
+            )
+    if not isinstance(access_token, str):
+        access_token = access_token.decode("utf-8")
     return JSONResponse(
         {
-            "access_token": security.create_access_token(
-                user_id, expires_delta=access_token_expires
-            ).decode("utf-8"),
+            "access_token": access_token,
             "token_type": "bearer",
                     "user_id": user.id,
         "username": user.username,
         "roles": user.roles,
 
-        }
+            }
     )
     return Token(
         access_token=security.create_access_token(

@@ -53,7 +53,7 @@ async def create_category(session: SessionDep, current_user: CurrentUser, catego
 
 @router.delete("/{id}", response_model=CategoryPublic)
 async def delete_category(session: SessionDep, current_user: CurrentUser, id: int):
-    if not UserRoles.editor in current_user.roles or not UserRoles.admin in current_user.roles:
+    if (not UserRoles.admin in current_user.roles) and (not UserRoles.editor in current_user.roles):
         raise HTTPException(status_code=403, detail="Forbidden")
     
     cat = session.get(Category, id)

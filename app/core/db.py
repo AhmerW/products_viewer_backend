@@ -28,6 +28,7 @@ def init_db(session: Session) -> None:
     
 
     # This works because the models are already imported and registered from app.models
+    # SQLModel.metadata.drop_all(engine)
     SQLModel.metadata.create_all(engine)
 
     user = session.exec(

@@ -34,6 +34,7 @@ class ProductLabelModel(BaseModel):
 
 class ProductBase(SQLModel):                                                                                                    
     title: str = Field(index=True)
+    image: str = Field(default="")
     fields: List[FieldBaseModel] = Field(default=[], sa_column=Column(JSON))
     headers: List[FieldBaseModel] = Field(default=[], sa_column=Column(JSON))
     labels: List[ProductLabelModel] = Field(default=[], sa_column=Column(JSON))

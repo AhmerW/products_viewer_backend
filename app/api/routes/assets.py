@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 from sqlmodel import select
 import os
 
-
+from app.core.config import settings
 from app.api.deps import CurrentUser, SessionDep
 from app.models.user_model import UserRoles
 

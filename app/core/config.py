@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = secrets.token_urlsafe(32)
     SECRET_KEY_REFRESH: str = secrets.token_urlsafe(32)
+    IS_DEV: bool = False
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 3  # 3 days
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30  # 30 days
@@ -68,4 +69,4 @@ class Settings(BaseSettings):
             path=self.POSTGRES_DB,
         )
     
-settings = Settings()
+settings = Settings()   
