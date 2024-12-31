@@ -15,6 +15,7 @@ from app.models.user_model import UserRoles
 router = APIRouter(prefix="/assets", tags=["assets", "asset"])
 
 # upload image
+@router.post("")
 @router.post("/")
 async def upload_image(session: SessionDep,  files: List[UploadFile] = File(...)):
     file = files[0]
@@ -27,6 +28,7 @@ async def upload_image(session: SessionDep,  files: List[UploadFile] = File(...)
     return {"filename": file.filename}
 
 # get
+@router.get("")
 @router.get("/")
 async def get_image(filename: str):
     if not os.path.exists(os.path.join("static", "images", filename)):

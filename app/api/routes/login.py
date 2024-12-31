@@ -21,7 +21,8 @@ router = APIRouter(tags=["login"])
 
 
 # takes username and password and returns refresh token
-@router.post("/login")
+@router.post("/login/")
+@router.post("/login", include_in_schema=False)
 def login_refresh_token(
     session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ):
@@ -67,7 +68,8 @@ def login_refresh_token(
 
 
 # takes refresh token and returns access token
-@router.post("/login/refresh")
+@router.post("/login/refresh/")
+@router.post("/login/refresh" , include_in_schema=False)
 def login_access_token(
     request: Request,
     session: SessionDep, 
@@ -116,7 +118,8 @@ def login_access_token(
 
 
 # create user if you are admin
-@router.post("/users", response_model=UserPublic)
+@router.post("/users/", response_model=UserPublic, include_in_schema=False)
+@router.post("/users", response_model=UserPublic, include_in_schema=False)
 def create_user_route(
     session: SessionDep,
     current_user: CurrentUser,
@@ -132,7 +135,8 @@ def create_user_route(
     user = create_user(session=session, user_create=user_in)
     return user
 
-@router.get("/users/me", response_model=UserPublic)
+@router.get("/users/me/", response_model=UserPublic, include_in_schema=False)
+@router.get("/users/me", response_model=UserPublic, include_in_schema=False)
 def read_users_me(
     current_user: CurrentUser,
 ):
@@ -141,7 +145,8 @@ def read_users_me(
     """
     return current_user
 
-@router.get("/users", response_model=List[UserPublic])
+@router.get("/users/", response_model=List[UserPublic] , include_in_schema=False)
+@router.get("/users", response_model=List[UserPublic] , include_in_schema=False)
 def read_users(
     session: SessionDep,
     current_user: CurrentUser,
@@ -154,6 +159,7 @@ def read_users(
     users = session.exec(select(User)).all()
     return users
 
+@router.delete("/users/{username}/", response_model=UserPublic)
 @router.delete("/users/{username}", response_model=UserPublic)
 def delete_user(
     session: SessionDep,

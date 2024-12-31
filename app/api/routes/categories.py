@@ -11,6 +11,7 @@ from app.models.category_model import Category, CategoryPublic, CategoriesPublic
 
 router = APIRouter(prefix="/categories", tags=["category", "categories"])
 
+@router.get("", response_model=CategoriesPublic)
 @router.get("/", response_model=CategoriesPublic)
 async def read_categories(
     session: SessionDep,
@@ -35,7 +36,7 @@ async def read_categories(
 
 
 
-
+@router.post("", response_model=CategoryPublic)
 @router.post("/", response_model=CategoryPublic)
 async def create_category(session: SessionDep, current_user: CurrentUser, category_in: CategoryCreate):
     if (not UserRoles.admin in current_user.roles) and (not UserRoles.editor in current_user.roles):
@@ -50,7 +51,7 @@ async def create_category(session: SessionDep, current_user: CurrentUser, catego
     return cat
 
 
-
+@router.delete("/{id}/", response_model=CategoryPublic)
 @router.delete("/{id}", response_model=CategoryPublic)
 async def delete_category(session: SessionDep, current_user: CurrentUser, id: int):
     if (not UserRoles.admin in current_user.roles) and (not UserRoles.editor in current_user.roles):

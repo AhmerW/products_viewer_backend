@@ -26,6 +26,7 @@ def save_default(session: SessionDep, default: DefaultModel) -> DefaultModel:
     return default
 
 # retrieve all defaults (id = 1)
+@router.get("", response_model=DefaultFieldAndHeaderResponse)
 @router.get("/", response_model=DefaultFieldAndHeaderResponse)
 async def read_defaults(
     session: SessionDep,
@@ -41,6 +42,7 @@ async def read_defaults(
 
 
 # get labels
+@router.get("/labels/", response_model=DefaultLabelsResponse)
 @router.get("/labels", response_model=DefaultLabelsResponse)
 async def read_default_labels(
     session: SessionDep,
@@ -55,6 +57,7 @@ async def read_default_labels(
     return default
 
 # update default fields
+@router.put("/fields/", response_model=DefaultFieldAndHeaderResponse)
 @router.put("/fields", response_model=DefaultFieldAndHeaderResponse)
 async def update_default_fields(
     session: SessionDep,
@@ -72,6 +75,7 @@ async def update_default_fields(
 
 
 # update default headers
+@router.put("/headers/", response_model=DefaultHeadersResponse)
 @router.put("/headers", response_model=DefaultHeadersResponse)
 async def update_default_headers(
     session: SessionDep,
@@ -88,6 +92,7 @@ async def update_default_headers(
 
 
 # update default labels
+@router.put("/labels/", response_model=DefaultLabelsResponse)
 @router.put("/labels", response_model=DefaultLabelsResponse)
 async def update_default_labels(
     session: SessionDep,

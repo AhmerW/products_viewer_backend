@@ -17,6 +17,7 @@ router = APIRouter(prefix="/products", tags=["products"])
 
 
 
+@router.put("", response_model=ProductsPublic)
 @router.put("/", response_model=ProductsPublic)
 async def read_products(
     session: SessionDep,
@@ -159,6 +160,7 @@ async def read_product(session: SessionDep, current_user, CurrentUser, id: int):
     return product
 """
 
+@router.post("", response_model=ProductPublic)
 @router.post("/", response_model=ProductPublic)
 async def create_product(session: SessionDep, current_user: CurrentUser, product_in: ProductCreate):
     if (not UserRoles.admin in current_user.roles) and (not UserRoles.editor in current_user.roles):
@@ -183,6 +185,7 @@ async def create_product(session: SessionDep, current_user: CurrentUser, product
 
 
 
+@router.put("/{id}/", response_model=ProductPublic)
 @router.put("/{id}", response_model=ProductPublic)
 async def update_product(session: SessionDep, current_user: CurrentUser, id: int, product_in: ProductCreate):
     if (not UserRoles.editor in current_user.roles) and (not UserRoles.admin in current_user.roles):
@@ -200,6 +203,8 @@ async def update_product(session: SessionDep, current_user: CurrentUser, id: int
     session.refresh(product)
     return product  
 
+
+@router.delete("/{id}/", response_model=ProductPublic)
 @router.delete("/{id}", response_model=ProductPublic)
 async def delete_product(session: SessionDep, current_user: CurrentUser, id: int):
     if not UserRoles.editor in current_user.roles or not UserRoles.admin in current_user.roles:
@@ -213,6 +218,7 @@ async def delete_product(session: SessionDep, current_user: CurrentUser, id: int
     session.commit()
     return product
 
+@router.get("/count/", response_model=int)   
 @router.get("/count", response_model=int)   
 async def count_products(session: SessionDep):
 
